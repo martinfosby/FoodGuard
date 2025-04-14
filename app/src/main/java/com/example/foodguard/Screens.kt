@@ -1,3 +1,4 @@
+import android.service.autofill.OnClickAction
 import android.view.ViewGroup
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -19,6 +20,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,91 +32,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
-@androidx.annotation.OptIn(ExperimentalGetImage::class)
-@Composable
-fun CameraPreviewScreen() {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-
-    // Barcode data state
-    var barcodeData by remember { mutableStateOf<String?>(null) }
-
-    AndroidView(
-        factory = { ctx ->
-            val previewView = PreviewView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
-
-                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                try {
-                    cameraProvider.unbindAll()
-                    val camera = cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview
-                    )
-
-                    // Set up barcode scanning
-                    val analysisUseCase = ImageAnalysis.Builder().build()
-                    analysisUseCase.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { imageProxy ->
-                        val barcodeScanner = BarcodeScanning.getClient()
-                        val mediaImage = imageProxy.image
-                        if (mediaImage != null) {
-                            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                            barcodeScanner.process(image)
-                                .addOnSuccessListener { barcodes ->
-                                    // Check if any barcode is detected
-                                    if (barcodes.isNotEmpty()) {
-                                        val barcode = barcodes[0]
-                                        barcodeData = barcode.displayValue
-                                    }
-                                }
-                                .addOnFailureListener {
-                                    // Handle failure
-                                }
-                                .addOnCompleteListener {
-                                    imageProxy.close()
-                                }
-                        }
-                    }
-
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview,
-                        analysisUseCase
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }, ContextCompat.getMainExecutor(ctx))
-
-            previewView
-        },
-        modifier = Modifier.fillMaxSize(),
-        onRelease = {
-            // Clean up camera resources if needed when composable is removed
-            cameraProviderFuture.get().unbindAll()
-        }
-    )
-}
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun BarcodeScannerScreen() {
+fun BarcodeScannerScreen(navController: NavController) {
     val cameraPermissionState = rememberPermissionState(permission = android.Manifest.permission.CAMERA)
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -210,30 +137,9 @@ fun BarcodeScannerScreen() {
     }
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
-@Composable
-fun PermissionScreen() {
-    val cameraPermissionState = rememberPermissionState(permission = android.Manifest.permission.CAMERA)
-
-    // Launch permission request if necessary
-    LaunchedEffect(Unit) {
-        if (!cameraPermissionState.status.isGranted) {
-            cameraPermissionState.launchPermissionRequest()
-        }
-    }
-
-    // If permission granted, show CameraPreviewScreen, else show permission required message
-    if (cameraPermissionState.status.isGranted) {
-        CameraPreviewScreen()
-    } else {
-        Text("Camera permission is required", color = Color.Red)
-    }
-}
-
-
 
 @Composable
-fun FoodScreen() {
+fun FoodScreen(navController: NavController) {
     val darkBackground = Color(0xFF121822)
     val orangeAccent = Color(0xFFFF9500)
     val darkGrayBackground = Color(0xFF222A36)
@@ -325,15 +231,10 @@ fun FoodScreen() {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             InputMethodButton(
-                icon = Icons.Default.Phone,
-                text = "Say It",
-                color = orangeAccent
-            )
-
-            InputMethodButton(
                 icon = Icons.Default.Add,
                 text = "Scan It",
-                color = orangeAccent
+                color = orangeAccent,
+                onClick = { navController.navigate("barcode_scanner") }
             )
         }
 
@@ -384,27 +285,27 @@ fun FoodScreen() {
                 date = "Wed"
             )
 
-            // Show More Button
-            Row(
-                modifier = Modifier.padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Show More",
-                    color = orangeAccent,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "9 additional items found",
-                    color = Color.Gray,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+//            // Show More Button
+//            Row(
+//                modifier = Modifier.padding(vertical = 8.dp),
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                Text(
+//                    text = "Show More",
+//                    color = orangeAccent,
+//                    fontWeight = FontWeight.Bold,
+//                    fontSize = 16.sp
+//                )
+//
+//                Spacer(modifier = Modifier.height(4.dp))
+//
+//                Text(
+//                    text = "9 additional items found",
+//                    color = Color.Gray,
+//                    fontSize = 14.sp,
+//                    modifier = Modifier.padding(start = 8.dp)
+//                )
+//            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -466,12 +367,18 @@ fun CategoryTab(name: String, isSelected: Boolean) {
 }
 
 @Composable
-fun InputMethodButton(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, color: Color) {
+fun InputMethodButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    color: Color,
+    onClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFF2E3949))
-            .padding(vertical = 16.dp, horizontal = 24.dp),
+            .padding(vertical = 16.dp, horizontal = 24.dp)
+            .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(

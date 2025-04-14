@@ -10,3 +10,9 @@ data class Food(
     val price: Int?,
     val expiry: String?
 )
+
+@Entity(tableName = "scannedItem")
+data class ScannedItem(
+    @PrimaryKey val id: Int = 0,
+    val barcode: String
+)
