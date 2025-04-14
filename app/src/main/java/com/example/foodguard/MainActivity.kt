@@ -1,7 +1,6 @@
 package com.example.foodguard
 
-import BarcodeScannerScreen
-import MainScreen
+import FoodScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,34 +27,7 @@ fun FoodGuardApp() {
     FoodGuardTheme {
 //        FoodScreen()
 //        MainScreen()
-        BarcodeScannerScreen()
-    }
-}
-
-@Composable
-fun FoodScreen() {
-    var foodName by remember { mutableStateOf("") }
-    val coroutineScope = rememberCoroutineScope()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        TextField(
-            value = foodName,
-            onValueChange = { foodName = it },
-            label = { Text("Enter food name") }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = {
-            coroutineScope.launch {
-                // Call function to insert food (Implement Room integration here)
-            }
-        }) {
-            Text("Save Food")
-        }
+//        BarcodeScannerScreen()
+        FoodScreen()
     }
 }

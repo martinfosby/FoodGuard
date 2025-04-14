@@ -1,9 +1,9 @@
-import android.content.Context
-import android.util.Log
 import android.view.ViewGroup
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -12,17 +12,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
@@ -104,6 +111,7 @@ fun CameraPreviewScreen() {
     )
 }
 
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun BarcodeScannerScreen() {
@@ -204,7 +212,7 @@ fun BarcodeScannerScreen() {
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MainScreen() {
+fun PermissionScreen() {
     val cameraPermissionState = rememberPermissionState(permission = android.Manifest.permission.CAMERA)
 
     // Launch permission request if necessary
@@ -219,5 +227,321 @@ fun MainScreen() {
         CameraPreviewScreen()
     } else {
         Text("Camera permission is required", color = Color.Red)
+    }
+}
+
+
+
+@Composable
+fun FoodScreen() {
+    val darkBackground = Color(0xFF121822)
+    val orangeAccent = Color(0xFFFF9500)
+    val darkGrayBackground = Color(0xFF222A36)
+
+    var searchText by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(darkBackground)
+            .padding(bottom = 80.dp) // Space for bottom nav bar
+    ) {
+        // Top Bar with Search
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Orange circle icon
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(orangeAccent),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "App Logo",
+                    tint = Color.White
+                )
+            }
+
+            // Search Bar
+            TextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                colors = TextFieldDefaults.colors(
+                    unfocusedContainerColor = darkGrayBackground,
+                    focusedContainerColor = darkGrayBackground,
+                    cursorColor = orangeAccent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent
+                ),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = Color.Gray
+                    )
+                },
+                placeholder = { Text("Search", color = Color.Gray) }
+            )
+
+            // Done Button
+            Text(
+                text = "Done",
+                color = orangeAccent,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        // Tab Navigation
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(darkGrayBackground),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            CategoryTab("Search", true)
+            CategoryTab("My Foods", false)
+            CategoryTab("Meals", false)
+            CategoryTab("Recipes", false)
+        }
+
+        // Input Methods
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            InputMethodButton(
+                icon = Icons.Default.Phone,
+                text = "Say It",
+                color = orangeAccent
+            )
+
+            InputMethodButton(
+                icon = Icons.Default.Add,
+                text = "Scan It",
+                color = orangeAccent
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Breakfast Foods Section
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text(
+                text = "YOUR BREAKFAST FOODS",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            FoodItem(
+                icon = Icons.Default.AccountBox,
+                name = "Whey 1000 vanilla",
+                description = "Body Fuel - 116 cals per 30 Grams",
+                date = "Mon"
+            )
+
+            FoodItem(
+                icon = Icons.Default.AccountBox,
+                name = "Hjemmelaget Pizza",
+                description = "1017 cals per 5 Servings",
+                date = "6 Mar"
+            )
+
+            FoodItem(
+                icon = Icons.Default.AccountBox,
+                name = "Bolle",
+                description = "Hjemmelaget - 400 cals per 2 Servings",
+                date = "5 Mar"
+            )
+
+            FoodItem(
+                icon = Icons.Default.AccountBox,
+                name = "4 cheese Mac & Cheese",
+                description = "Mac Heaven - 732 cals per 184 Grams",
+                date = "Wed"
+            )
+
+            FoodItem(
+                icon = Icons.Default.AccountBox,
+                name = "Cootage Cheese Vanilje",
+                description = "Tine - 316 cals per 400 Grams",
+                date = "Wed"
+            )
+
+            // Show More Button
+            Row(
+                modifier = Modifier.padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Show More",
+                    color = orangeAccent,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "9 additional items found",
+                    color = Color.Gray,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Recent Meals Section
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text(
+                text = "RECENT MEALS",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            FoodItem(
+                icon = Icons.Default.AccountBox,
+                name = "Breakfast",
+                description = "517 calories, 3 items",
+                date = "Today"
+            )
+        }
+
+        // Floating Action Button
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = { /* Handle click */ },
+                modifier = Modifier.padding(16.dp),
+                containerColor = orangeAccent,
+                contentColor = Color.Black
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AccountBox,
+                    contentDescription = "Scan Barcode"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryTab(name: String, isSelected: Boolean) {
+    Box(
+        modifier = Modifier
+            .padding(4.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (isSelected) Color(0xFF2E3949) else Color.Transparent)
+            .padding(vertical = 8.dp, horizontal = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = name,
+            color = if (isSelected) Color(0xFFFF9500) else Color.Gray,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+fun InputMethodButton(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, color: Color) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF2E3949))
+            .padding(vertical = 16.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = text,
+            tint = color,
+            modifier = Modifier.size(30.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = text,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun FoodItem(icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, description: String, date: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Food Icon
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF2E3949)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = name,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        // Food Info
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp)
+        ) {
+            Text(
+                text = name,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = description,
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+        }
+
+        // Date
+        Text(
+            text = date,
+            color = Color.Gray,
+            fontSize = 14.sp
+        )
     }
 }
