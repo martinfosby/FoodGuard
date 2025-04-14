@@ -1,5 +1,7 @@
+package com.example.foodguard.room
+
 import androidx.room.*
-import com.example.foodguard.Food
+import com.example.foodguard.room.Food
 
 @Dao
 interface FoodDao {
@@ -11,7 +13,7 @@ interface FoodDao {
     suspend fun getAllFood(): List<Food>
 
     @Query("SELECT * FROM food WHERE id = :foodId")
-    suspend fun getFood(foodId: Int)
+    suspend fun getFood(foodId: Int): Food?
 
     @Query("DELETE FROM food WHERE id = :foodId")
     suspend fun deleteFood(foodId: Int)

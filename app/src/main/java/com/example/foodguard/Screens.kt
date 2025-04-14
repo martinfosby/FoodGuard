@@ -36,6 +36,14 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
+import com.example.foodguard.room.AppDatabase
+import com.example.foodguard.room.ScannedItem
+import com.example.foodguard.room.ScannedItemDao
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
@@ -46,6 +54,10 @@ fun BarcodeScannerScreen(navController: NavController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val database = AppDatabase.getDatabase(LocalContext.current)
+    val scannedItemDao = database.scannedItemDao()
+    val scope = rememberCoroutineScope()
+    var storedInDb by remember { mutableStateOf(false) }
 
     // Barcode data state
     var barcodeData by remember { mutableStateOf<String?>(null) }
@@ -126,8 +138,23 @@ fun BarcodeScannerScreen(navController: NavController) {
         )
 
         // Display barcode data if found
-        barcodeData?.let {
-            Text("Scanned barcode: $it", color = Color.Green)
+        barcodeData?.let { barcode ->
+            // This effect runs once when barcode changes (or first loaded)
+            LaunchedEffect(barcode) {
+                withContext(Dispatchers.IO) {
+                    val newItem = ScannedItem(barcode = barcode)
+                    scannedItemDao.insertScannedItem(newItem)
+                }
+                storedInDb = true
+            }
+
+            Column {
+                Text("Scanned barcode: $barcode", color = Color.Green)
+
+                if (storedInDb) {
+                    Text("Barcode saved to database", color = Color.Yellow)
+                }
+            }
         } ?: run {
             Text("Scan a barcode", color = Color.Red)
         }
@@ -143,6 +170,10 @@ fun FoodScreen(navController: NavController) {
     val darkBackground = Color(0xFF121822)
     val orangeAccent = Color(0xFFFF9500)
     val darkGrayBackground = Color(0xFF222A36)
+    val database = AppDatabase.getDatabase(LocalContext.current)
+    val scannedItemDao = database.scannedItemDao()
+    val scope = rememberCoroutineScope()
+    var scannedItems by remember { mutableStateOf<List<ScannedItem>>(emptyList()) }
 
     var searchText by remember { mutableStateOf("") }
 
@@ -242,48 +273,18 @@ fun FoodScreen(navController: NavController) {
 
         // Breakfast Foods Section
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(
-                text = "YOUR BREAKFAST FOODS",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            FoodItem(
-                icon = Icons.Default.AccountBox,
-                name = "Whey 1000 vanilla",
-                description = "Body Fuel - 116 cals per 30 Grams",
-                date = "Mon"
-            )
-
-            FoodItem(
-                icon = Icons.Default.AccountBox,
-                name = "Hjemmelaget Pizza",
-                description = "1017 cals per 5 Servings",
-                date = "6 Mar"
-            )
-
-            FoodItem(
-                icon = Icons.Default.AccountBox,
-                name = "Bolle",
-                description = "Hjemmelaget - 400 cals per 2 Servings",
-                date = "5 Mar"
-            )
-
-            FoodItem(
-                icon = Icons.Default.AccountBox,
-                name = "4 cheese Mac & Cheese",
-                description = "Mac Heaven - 732 cals per 184 Grams",
-                date = "Wed"
-            )
-
-            FoodItem(
-                icon = Icons.Default.AccountBox,
-                name = "Cootage Cheese Vanilje",
-                description = "Tine - 316 cals per 400 Grams",
-                date = "Wed"
-            )
+            scope.launch(Dispatchers.IO) {
+                scannedItems = scannedItemDao.getAllScannedItem()
+            }
+            for (scannedItem in scannedItems) {
+                Text(
+                    text = "Barcode: " + scannedItem.barcode,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
 //            // Show More Button
 //            Row(

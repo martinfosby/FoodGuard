@@ -1,22 +1,24 @@
-package com.example.foodguard
+package com.example.foodguard.room
 
+import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
+@Dao
 interface ScannedItemDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertScannedItem(food: Food)
+    suspend fun insertScannedItem(scannedItem: ScannedItem)
 
     @Query("SELECT * FROM scannedItem")
-    suspend fun getAllScannedItem(): List<Food>
+    suspend fun getAllScannedItem(): List<ScannedItem>
 
     @Query("SELECT * FROM scannedItem WHERE id = :scannedItemId")
-    suspend fun getScannedItem(scannedItemId: Int)
+    suspend fun getScannedItem(scannedItemId: Int): ScannedItem?
 
     @Query("DELETE FROM scannedItem WHERE id = :scannedItemId")
-    suspend fun deleteFood(scannedItemId: Int)
+    suspend fun deleteScannedItem(scannedItemId: Int)
 
     @Query("SELECT * FROM scannedItem WHERE barcode = :scannedItemBarcode")
-    suspend fun getScannedItemByBarcode(scannedItemBarcode: String)
+    suspend fun getScannedItemByBarcode(scannedItemBarcode: String): ScannedItem?
 }
