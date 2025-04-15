@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class ScannedItem(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val barcode: String,
-    val name: String? = null,
+    val barcode: String? = null,
+    val qrcode: String? = null,
     val scanTimestamp: Long = System.currentTimeMillis()
 )

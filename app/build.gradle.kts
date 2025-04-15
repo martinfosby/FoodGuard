@@ -3,6 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.compose")
+    kotlin("plugin.serialization")
+
 }
 
 android {
@@ -93,5 +95,10 @@ dependencies {
     implementation("androidx.camera:camera-mlkit-vision:1.4.2")
     implementation("androidx.camera:camera-camera2:1.4.2")
     implementation("com.google.accompanist:accompanist-permissions:0.30.1")
+
+    implementation("io.ktor:ktor-client-core:2.3.7")
+    implementation("io.ktor:ktor-client-cio:2.3.7") // eller Android engine
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
 
 }

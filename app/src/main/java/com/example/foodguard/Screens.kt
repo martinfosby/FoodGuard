@@ -1,5 +1,6 @@
 import android.service.autofill.OnClickAction
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -22,6 +23,8 @@ import com.google.mlkit.vision.common.InputImage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -37,6 +40,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
+import com.example.foodguard.ktor.KtorApi
+import com.example.foodguard.ktor.Product
 import com.example.foodguard.room.AppDatabase
 import com.example.foodguard.room.ScannedItem
 import com.example.foodguard.room.ScannedItemDao
@@ -95,7 +100,7 @@ fun BarcodeScannerScreen(navController: NavController) {
                             preview
                         )
 
-                        // Set up barcode scanning
+                        // Set up barcode or qr scanning
                         val analysisUseCase = ImageAnalysis.Builder().build()
                         analysisUseCase.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { imageProxy ->
                             val barcodeScanner = BarcodeScanning.getClient()
@@ -156,7 +161,7 @@ fun BarcodeScannerScreen(navController: NavController) {
                 }
             }
         } ?: run {
-            Text("Scan a barcode", color = Color.Red)
+            Text("Scan a barcode or QR", color = Color.Red)
         }
 
     } else {
@@ -172,8 +177,6 @@ fun FoodScreen(navController: NavController) {
     val darkGrayBackground = Color(0xFF222A36)
     val database = AppDatabase.getDatabase(LocalContext.current)
     val scannedItemDao = database.scannedItemDao()
-    val scope = rememberCoroutineScope()
-    var scannedItems by remember { mutableStateOf<List<ScannedItem>>(emptyList()) }
 
     var searchText by remember { mutableStateOf("") }
 
@@ -271,63 +274,10 @@ fun FoodScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Breakfast Foods Section
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            scope.launch(Dispatchers.IO) {
-                scannedItems = scannedItemDao.getAllScannedItem()
-            }
-            for (scannedItem in scannedItems) {
-                Text(
-                    text = "Barcode: " + scannedItem.barcode,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-
-//            // Show More Button
-//            Row(
-//                modifier = Modifier.padding(vertical = 8.dp),
-//                verticalAlignment = Alignment.CenterVertically
-//            ) {
-//                Text(
-//                    text = "Show More",
-//                    color = orangeAccent,
-//                    fontWeight = FontWeight.Bold,
-//                    fontSize = 16.sp
-//                )
-//
-//                Spacer(modifier = Modifier.height(4.dp))
-//
-//                Text(
-//                    text = "9 additional items found",
-//                    color = Color.Gray,
-//                    fontSize = 14.sp,
-//                    modifier = Modifier.padding(start = 8.dp)
-//                )
-//            }
-        }
+        // Scanned items section
+        ScannedItemsList(scannedItemDao, navController, Modifier.padding(horizontal = 16.dp))
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Recent Meals Section
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(
-                text = "RECENT MEALS",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            FoodItem(
-                icon = Icons.Default.AccountBox,
-                name = "Breakfast",
-                description = "517 calories, 3 items",
-                date = "Today"
-            )
-        }
 
         // Floating Action Button
         Box(
@@ -335,19 +285,88 @@ fun FoodScreen(navController: NavController) {
             contentAlignment = Alignment.BottomEnd
         ) {
             FloatingActionButton(
-                onClick = { /* Handle click */ },
+                onClick = { navController.navigate("barcode_scanner")},
                 modifier = Modifier.padding(16.dp),
                 containerColor = orangeAccent,
                 contentColor = Color.Black
             ) {
                 Icon(
-                    imageVector = Icons.Default.AccountBox,
+                    imageVector = Icons.Default.Add,
                     contentDescription = "Scan Barcode"
                 )
             }
         }
     }
 }
+
+@Composable
+fun ScannedItemsList(
+    scannedItemDao: ScannedItemDao,
+    navController: NavController,
+    modifier: Modifier = Modifier.padding(horizontal = 16.dp),
+) {
+    var scannedItems by remember { mutableStateOf<List<ScannedItem>>(emptyList()) }
+
+    // Load scanned items from the database when this Composable enters composition
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            scannedItems = scannedItemDao.getAllScannedItem()
+        }
+    }
+
+    LazyColumn(
+        modifier = modifier
+    ) {
+        items(scannedItems) { scannedItem ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        // Navigate to the product info screen with barcode
+                        navController.navigate("product/${scannedItem.barcode}")
+                    }
+            ) {
+                Text(
+                    text = "Barcode: ${scannedItem.barcode}",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+    }
+}
+@Composable
+fun ProductInfoScreen(navController: NavController, barcode: String) {
+    var product by remember { mutableStateOf<Product?>(null) }
+    val context = LocalContext.current
+
+    LaunchedEffect(barcode) {
+        val result = KtorApi.fetchProduct(barcode)
+        if (result != null) {
+            product = result
+        } else {
+            Toast.makeText(context, "Fant ikke produktet", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Strekkode: $barcode", fontWeight = FontWeight.Bold, color = Color.Green)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        product?.let {
+            Text("Navn: ${it.product_name ?: "Ukjent"}")
+            Text("Merke: ${it.brands ?: "Ukjent"}")
+            it.nutriments?.let { n ->
+                Text("Fett: ${n.fat ?: 0.0}g")
+                Text("Karbohydrater: ${n.carbohydrates ?: 0.0}g")
+                Text("Proteiner: ${n.proteins ?: 0.0}g")
+            }
+        } ?: Text("Laster produktinfo...")
+    }
+}
+
 
 @Composable
 fun CategoryTab(name: String, isSelected: Boolean) {

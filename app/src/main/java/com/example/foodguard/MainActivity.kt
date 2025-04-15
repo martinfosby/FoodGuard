@@ -2,6 +2,7 @@ package com.example.foodguard
 
 import FoodScreen
 import BarcodeScannerScreen
+import ProductInfoScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,6 +41,10 @@ fun FoodGuardApp() {
             }
             composable("barcode_scanner") {
                 BarcodeScannerScreen(navController = navController)
+            }
+            composable("product/{barcode}") { backStackEntry ->
+                val barcode = backStackEntry.arguments?.getString("barcode") ?: ""
+                ProductInfoScreen(navController, barcode)
             }
 
         }
