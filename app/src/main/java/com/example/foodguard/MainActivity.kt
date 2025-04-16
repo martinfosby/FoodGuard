@@ -2,7 +2,9 @@ package com.example.foodguard
 
 import FoodScreen
 import BarcodeScannerScreen
+import HomeScreen
 import ProductInfoScreen
+import RecipeGeneratorScreen
 import ScannedItemsScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -29,8 +31,11 @@ fun FoodGuardApp() {
 
         val navController = rememberNavController()
 
-        NavHost(navController = navController, startDestination = "scanned_items") {
+        NavHost(navController = navController, startDestination = "home") {
             composable("home") {
+                HomeScreen(navController)
+            }
+            composable("food") {
                 FoodScreen(navController)
             }
             composable("scanned_items") {
@@ -43,6 +48,8 @@ fun FoodGuardApp() {
                 val barcode = backStackEntry.arguments?.getString("barcode") ?: ""
                 ProductInfoScreen(navController, barcode)
             }
+            composable("recipe_generator") {
+                RecipeGeneratorScreen() }
 
         }
     }

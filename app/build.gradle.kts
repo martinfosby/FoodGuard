@@ -54,6 +54,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.compiler:compiler:1.5.15")  // Example for a compatible version
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
     // Activity support for Compose
     implementation("androidx.activity:activity-compose:1.10.1")
