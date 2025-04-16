@@ -21,4 +21,7 @@ interface ScannedItemDao {
 
     @Query("SELECT * FROM scannedItem WHERE barcode = :scannedItemBarcode")
     suspend fun getScannedItemByBarcode(scannedItemBarcode: String): ScannedItem?
+
+    @Query("SELECT * FROM scannedItem WHERE barcode = :code OR qrcode = :code LIMIT 1")
+    suspend fun findByCode(code: String): ScannedItem?
 }

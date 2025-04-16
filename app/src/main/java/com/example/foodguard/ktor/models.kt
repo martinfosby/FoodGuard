@@ -11,6 +11,9 @@ data class ProductResponse(
 data class Product(
     val product_name: String? = null,
     val brands: String? = null,
+    val expiration_date: String? = null,
+    val packaging_date: String? = null,
+    val image_url: String? = null,
     val nutriments: Nutriments? = null
 )
 

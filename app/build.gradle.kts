@@ -4,7 +4,6 @@ plugins {
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.compose")
     kotlin("plugin.serialization")
-
 }
 
 android {
@@ -19,6 +18,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
     }
 
     buildTypes {
@@ -45,12 +45,12 @@ android {
 }
 
 dependencies {
-    implementation("androidx.navigation:navigation-compose:2.8.9")
     val composeBom = platform("androidx.compose:compose-bom:2025.02.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.16.0")
+    implementation("androidx.navigation:navigation-compose:2.8.9")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.compiler:compiler:1.5.15")  // Example for a compatible version
@@ -73,12 +73,14 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
 
+    // junit, espresso
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 
-    val roomVersion = "2.7.0"
 
+    // room
+    val roomVersion = "2.7.0"
     implementation("androidx.room:room-runtime:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
@@ -88,6 +90,7 @@ dependencies {
     testImplementation("androidx.room:room-testing:$roomVersion")
     implementation("androidx.room:room-paging:$roomVersion")
 
+    // ml kit
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("androidx.camera:camera-core:1.4.2")
     implementation("androidx.camera:camera-lifecycle:1.4.2")
@@ -96,9 +99,13 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.4.2")
     implementation("com.google.accompanist:accompanist-permissions:0.30.1")
 
+    // ktor
     implementation("io.ktor:ktor-client-core:2.3.7")
     implementation("io.ktor:ktor-client-cio:2.3.7") // eller Android engine
     implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+
+    // coil
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
 }

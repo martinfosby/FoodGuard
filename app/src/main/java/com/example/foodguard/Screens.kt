@@ -1,4 +1,3 @@
-import android.service.autofill.OnClickAction
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.camera.core.*
@@ -34,20 +33,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.room.Room
+import coil.compose.AsyncImage
 import com.example.foodguard.ktor.KtorApi
 import com.example.foodguard.ktor.Product
+import com.example.foodguard.llminference.MLCBridge
 import com.example.foodguard.room.AppDatabase
 import com.example.foodguard.room.ScannedItem
 import com.example.foodguard.room.ScannedItemDao
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
@@ -61,8 +55,9 @@ fun BarcodeScannerScreen(navController: NavController) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val database = AppDatabase.getDatabase(LocalContext.current)
     val scannedItemDao = database.scannedItemDao()
-    val scope = rememberCoroutineScope()
     var storedInDb by remember { mutableStateOf(false) }
+    var existInDb by remember { mutableStateOf(false) }
+
 
     // Barcode data state
     var barcodeData by remember { mutableStateOf<String?>(null) }
@@ -148,16 +143,27 @@ fun BarcodeScannerScreen(navController: NavController) {
             LaunchedEffect(barcode) {
                 withContext(Dispatchers.IO) {
                     val newItem = ScannedItem(barcode = barcode)
-                    scannedItemDao.insertScannedItem(newItem)
+                    val found = scannedItemDao.findByCode(barcode)
+                    if (found == null) {
+                        scannedItemDao.insertScannedItem(newItem)
+                        storedInDb = true
+                        existInDb = false
+                    }
+                    else {
+                        existInDb = true
+                        storedInDb = false
+                    }
                 }
-                storedInDb = true
             }
 
             Column {
                 Text("Scanned barcode: $barcode", color = Color.Green)
 
                 if (storedInDb) {
-                    Text("Barcode saved to database", color = Color.Yellow)
+                    Text("Code saved to database", color = Color.Green)
+                }
+                else if (existInDb) {
+                    Text("Code already exist in database", color = Color.Yellow)
                 }
             }
         } ?: run {
@@ -168,6 +174,7 @@ fun BarcodeScannerScreen(navController: NavController) {
         Text("Camera permission is required", color = Color.Red)
     }
 }
+
 
 
 @Composable
@@ -300,6 +307,39 @@ fun FoodScreen(navController: NavController) {
 }
 
 @Composable
+fun ScannedItemsScreen(navController: NavController) {
+    val database = AppDatabase.getDatabase(LocalContext.current)
+    val scannedItemDao = database.scannedItemDao()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 80.dp) // Space for bottom nav bar
+    ) {
+        // Scanned items section
+        ScannedItemsList(scannedItemDao, navController, Modifier.padding(horizontal = 16.dp))
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Floating Action Button
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = { navController.navigate("barcode_scanner")},
+                modifier = Modifier.padding(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Scan Barcode"
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun ScannedItemsList(
     scannedItemDao: ScannedItemDao,
     navController: NavController,
@@ -318,7 +358,7 @@ fun ScannedItemsList(
         modifier = modifier
     ) {
         items(scannedItems) { scannedItem ->
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
@@ -326,17 +366,13 @@ fun ScannedItemsList(
                         navController.navigate("product/${scannedItem.barcode}")
                     }
             ) {
-                Text(
-                    text = "Barcode: ${scannedItem.barcode}",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                FoodItem(scannedItem.barcode.toString())
             }
         }
     }
 }
+
+
 @Composable
 fun ProductInfoScreen(navController: NavController, barcode: String) {
     var product by remember { mutableStateOf<Product?>(null) }
@@ -358,11 +394,17 @@ fun ProductInfoScreen(navController: NavController, barcode: String) {
         product?.let {
             Text("Navn: ${it.product_name ?: "Ukjent"}")
             Text("Merke: ${it.brands ?: "Ukjent"}")
+            Text("Utgår: ${it.expiration_date ?: "Ukjent"}")
             it.nutriments?.let { n ->
                 Text("Fett: ${n.fat ?: 0.0}g")
                 Text("Karbohydrater: ${n.carbohydrates ?: 0.0}g")
                 Text("Proteiner: ${n.proteins ?: 0.0}g")
             }
+            AsyncImage(
+                model = it.image_url,
+                contentDescription = "Product Image",
+                modifier = Modifier.size(200.dp)
+            )
         } ?: Text("Laster produktinfo...")
     }
 }
@@ -419,56 +461,52 @@ fun InputMethodButton(
 }
 
 @Composable
-fun FoodItem(icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, description: String, date: String) {
+fun FoodItem(barcode: String) {
+    var product by remember { mutableStateOf<Product?>(null) }
+    val context = LocalContext.current
+
+    LaunchedEffect(barcode) {
+        val result = KtorApi.fetchProduct(barcode)
+        if (result != null) {
+            product = result
+        } else {
+            Toast.makeText(context, "Fant ikke produktet", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Food Icon
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF2E3949)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = name,
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
+        product?.let {
+            AsyncImage(
+                model = it.image_url,
+                contentDescription = "Product Image",
+                modifier = Modifier.size(50.dp)
             )
+            Text(it.product_name ?: "Ukjent")
+        } ?: Text("Laster produktinfo...")
+    }
+}
+
+@Composable
+fun RecipeGeneratorScreen() {
+    var result by remember { mutableStateOf("Generating...") }
+
+    LaunchedEffect(Unit) {
+        val modelLoaded = MLCBridge.initModel("mlc_models/phi-2/")
+        if (modelLoaded) {
+            result = MLCBridge.runInference("Ingredients: apple, flour, sugar\nRecipe:")
+        } else {
+            result = "Failed to load model."
         }
+    }
 
-        // Food Info
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 12.dp)
-        ) {
-            Text(
-                text = name,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = description,
-                color = Color.Gray,
-                fontSize = 14.sp
-            )
-        }
-
-        // Date
-        Text(
-            text = date,
-            color = Color.Gray,
-            fontSize = 14.sp
-        )
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Recipe Suggestion:", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(result)
     }
 }
