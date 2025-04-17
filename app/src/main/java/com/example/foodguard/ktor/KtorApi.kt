@@ -1,22 +1,32 @@
 package com.example.foodguard.ktor
 
+import android.util.Log
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
 import io.ktor.serialization.kotlinx.json.*
 
 object KtorApi {
+    private const val AI_API_URL = "https://api.deepseek.com/chat/completions"
+    private const val AI_API_KEY = "sk-35426ae0aba14ef3b1846dc84bbffc34"
+
+
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }
     }
 
-    suspend fun fetchProduct(barcode: String): Product? {
-        val url = "https://world.openfoodfacts.org/api/v0/product/$barcode.json"
+    suspend fun fetchProduct(code: String): Product? {
+        val url = "https://world.openfoodfacts.org/api/v2/product/$code"
         return try {
             val response: ProductResponse = client.get(url).body()
             response.product
@@ -25,4 +35,53 @@ object KtorApi {
             null
         }
     }
+
+
+
+    suspend fun chatWithAI(prompt: String): String {
+        val request = AIRequest(
+            model = "deepseek-chat", // or "deepseek-v2", depending on model name
+            messages = listOf(Message(role = "user", content = prompt))
+        )
+
+        return try {
+            val response = client.post(AI_API_URL) {
+                headers {
+                    append(HttpHeaders.Authorization, "Bearer $AI_API_KEY")
+                    append(HttpHeaders.ContentType, "application/json")
+                }
+                setBody(request)
+            }
+            Log.d("KtorApi", "response: $response")
+
+            val raw = response.bodyAsText()
+
+            val parsed = Json.decodeFromString<AIResponse>(raw)
+            parsed.choices.firstOrNull()?.message?.content ?: "No content"
+
+
+        } catch (e: ClientRequestException) { // 4xx errors
+            val errorBody = e.response.bodyAsText()
+            Log.e("KtorApi", "Client error: $errorBody")
+            "Client error: ${e.localizedMessage}"
+
+        } catch (e: ServerResponseException) { // 5xx errors
+            val errorBody = e.response.bodyAsText()
+            Log.e("KtorApi", "Server error: $errorBody")
+            "Server error: ${e.localizedMessage}"
+
+        } catch (e: ResponseException) { // Generic HTTP error
+            val errorBody = e.response.bodyAsText()
+            Log.e("KtorApi", "HTTP error: $errorBody")
+            "HTTP error: ${e.localizedMessage}"
+
+        } catch (e: Exception) {
+            // Log error or handle accordingly
+            Log.e("KtorApi","Error interacting with AI: ${e.localizedMessage}")
+            "Error occurred: ${e.localizedMessage}"
+        }
+
+    }
+
 }
+

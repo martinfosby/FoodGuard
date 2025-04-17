@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -46,6 +47,7 @@ import com.example.foodguard.room.ScannedItem
 import com.example.foodguard.room.ScannedItemDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.foodguard.R
 
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
@@ -589,17 +591,32 @@ fun FoodItem(barcode: String) {
     }
 }
 
+//@Composable
+//fun RecipeGeneratorScreen() {
+//    var result by remember { mutableStateOf("Generating...") }
+//
+//    LaunchedEffect(Unit) {
+//        val modelLoaded = MLCBridge.initModel("mlc_models/phi-2/")
+//        if (modelLoaded) {
+//            result = MLCBridge.runInference("Ingredients: apple, flour, sugar\nRecipe:")
+//        } else {
+//            result = "Failed to load model."
+//        }
+//    }
+//
+//    Column(modifier = Modifier.padding(16.dp)) {
+//        Text("Recipe Suggestion:", style = MaterialTheme.typography.titleLarge)
+//        Spacer(modifier = Modifier.height(12.dp))
+//        Text(result)
+//    }
+//}
+
 @Composable
 fun RecipeGeneratorScreen() {
     var result by remember { mutableStateOf("Generating...") }
-
+    var prompt = stringResource(R.string.recipe_system_prompt)
     LaunchedEffect(Unit) {
-        val modelLoaded = MLCBridge.initModel("mlc_models/phi-2/")
-        if (modelLoaded) {
-            result = MLCBridge.runInference("Ingredients: apple, flour, sugar\nRecipe:")
-        } else {
-            result = "Failed to load model."
-        }
+        result = KtorApi.chatWithAI(prompt)
     }
 
     Column(modifier = Modifier.padding(16.dp)) {

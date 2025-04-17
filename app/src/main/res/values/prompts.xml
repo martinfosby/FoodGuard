@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recipe_system_prompt">You are a recipe generator. Given a list of ingredients, suggest a simple meal.  Ingredients: tomatoes, pasta, olive oil, garlic  Response: You can make a garlic tomato pasta. Boil pasta, sauté garlic and tomatoes in olive oil, mix together, and serve hot.</string>
+</resources>
