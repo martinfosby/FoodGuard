@@ -14,10 +14,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
 import io.ktor.serialization.kotlinx.json.*
+
 object KtorApi {
     private const val AI_API_URL = "https://api.openai.com/v1/chat/completions"
     private const val AI_API_KEY = com.example.foodguard.BuildConfig.OPENAI_API_KEY
-
 
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {

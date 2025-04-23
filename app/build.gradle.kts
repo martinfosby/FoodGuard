@@ -5,6 +5,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     kotlin("plugin.serialization")
 }
+val openAiKey = project.findProperty("openai.api.key") as? String
+    ?: throw GradleException("Missing OpenAI API Key. Add openai.api.key to gradle.properties")
 
 android {
     namespace = "com.example.foodguard"
@@ -22,7 +24,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "OPENAI_API_KEY", "\"${project.properties["openai.api.key"] ?: "YOUR_DEFAULT_KEY"}\"")
+            buildConfigField("String", "OPENAI_API_KEY", "\"$openAiKey\"")
         }
         release {
             isMinifyEnabled = false
@@ -30,7 +32,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "OPENAI_API_KEY", "\"${project.properties["openai.api.key"] ?: "YOUR_DEFAULT_KEY"}\"")
+            buildConfigField("String", "OPENAI_API_KEY", "\"$openAiKey\"")
         }
     }
     compileOptions {
