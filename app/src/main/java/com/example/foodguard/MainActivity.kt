@@ -10,6 +10,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -28,7 +29,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun FoodGuardApp() {
     FoodGuardTheme {
-
+        val viewModel: ScannedItemsViewModel = viewModel()
         val navController = rememberNavController()
 
         NavHost(navController = navController, startDestination = "home") {
@@ -36,20 +37,19 @@ fun FoodGuardApp() {
                 HomeScreen(navController)
             }
             composable("food") {
-                FoodScreen(navController)
+                FoodScreen(navController, viewModel)
             }
             composable("scanned_items") {
-                ScannedItemsScreen(navController)
+                ScannedItemsScreen(navController, viewModel)
             }
             composable("barcode_scanner") {
                 BarcodeScannerScreen(navController = navController)
             }
-            composable("product/{barcode}") { backStackEntry ->
-                val barcode = backStackEntry.arguments?.getString("barcode") ?: ""
-                ProductInfoScreen(navController, barcode)
+            composable("product") {
+                ProductInfoScreen(navController, viewModel)
             }
             composable("recipe_generator") {
-                RecipeGeneratorScreen() }
+                RecipeGeneratorScreen(viewModel) }
 
         }
     }

@@ -21,12 +21,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "OPENAI_API_KEY", "\"${project.properties["openai.api.key"] ?: "YOUR_DEFAULT_KEY"}\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "OPENAI_API_KEY", "\"${project.properties["openai.api.key"] ?: "YOUR_DEFAULT_KEY"}\"")
         }
     }
     compileOptions {
@@ -39,6 +43,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
 }

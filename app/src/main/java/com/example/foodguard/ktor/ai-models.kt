@@ -1,5 +1,6 @@
 package com.example.foodguard.ktor
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 @Serializable
 data class AIRequest(
@@ -15,8 +16,11 @@ data class Message(
 
 @Serializable
 data class AIResponse(
-    val choices: List<Choice>,
+    val id: String,
+//    @SerialName("object") val objectType: String,
+    val choices: List<Choice>
 )
+
 
 @Serializable
 data class ErrorResponse(

@@ -1,6 +1,7 @@
 package com.example.foodguard.ktor
 
 import android.util.Log
+import com.example.foodguard.room.ScannedItem
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -13,10 +14,9 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
 import io.ktor.serialization.kotlinx.json.*
-
 object KtorApi {
-    private const val AI_API_URL = "https://api.deepseek.com/chat/completions"
-    private const val AI_API_KEY = "sk-35426ae0aba14ef3b1846dc84bbffc34"
+    private const val AI_API_URL = "https://api.openai.com/v1/chat/completions"
+    private const val AI_API_KEY = com.example.foodguard.BuildConfig.OPENAI_API_KEY
 
 
     private val client = HttpClient(CIO) {
@@ -25,8 +25,8 @@ object KtorApi {
         }
     }
 
-    suspend fun fetchProduct(code: String): Product? {
-        val url = "https://world.openfoodfacts.org/api/v2/product/$code"
+    suspend fun fetchProduct(scannedItem: ScannedItem?): Product? {
+        val url = "https://world.openfoodfacts.org/api/v2/product/${scannedItem?.barcode}"
         return try {
             val response: ProductResponse = client.get(url).body()
             response.product
@@ -37,28 +37,21 @@ object KtorApi {
     }
 
 
-
     suspend fun chatWithAI(prompt: String): String {
         val request = AIRequest(
-            model = "deepseek-chat", // or "deepseek-v2", depending on model name
+            model = "gpt-4o-mini",
             messages = listOf(Message(role = "user", content = prompt))
         )
 
         return try {
-            val response = client.post(AI_API_URL) {
+            val response: AIResponse = client.post(AI_API_URL) {
                 headers {
                     append(HttpHeaders.Authorization, "Bearer $AI_API_KEY")
                     append(HttpHeaders.ContentType, "application/json")
                 }
                 setBody(request)
-            }
-            Log.d("KtorApi", "response: $response")
-
-            val raw = response.bodyAsText()
-
-            val parsed = Json.decodeFromString<AIResponse>(raw)
-            parsed.choices.firstOrNull()?.message?.content ?: "No content"
-
+            }.body()
+            response.choices.firstOrNull()?.message?.content ?: "No content"
 
         } catch (e: ClientRequestException) { // 4xx errors
             val errorBody = e.response.bodyAsText()

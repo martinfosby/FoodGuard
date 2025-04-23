@@ -11,7 +11,7 @@ interface ScannedItemDao {
     suspend fun insertScannedItem(scannedItem: ScannedItem)
 
     @Query("SELECT * FROM scannedItem")
-    suspend fun getAllScannedItem(): List<ScannedItem>
+    suspend fun getAllScannedItems(): List<ScannedItem>
 
     @Query("SELECT * FROM scannedItem WHERE id = :scannedItemId")
     suspend fun getScannedItem(scannedItemId: Int): ScannedItem?

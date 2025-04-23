@@ -14,7 +14,8 @@ data class Product(
     val expiration_date: String? = null,
     val packaging_date: String? = null,
     val image_url: String? = null,
-    val nutriments: Nutriments? = null
+    val nutriments: Nutriments? = null,
+//    val allergens: String? = null
 )
 
 @Serializable
